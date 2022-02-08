@@ -16,7 +16,7 @@ struct PillsIcon: View {
         Image(systemName: systemName)
             .resizable()
             .scaledToFit()
-            .frame(width: 20, height: 20)
+            .frame(width: 18, height: 18)
             .foregroundColor(foregroundColor)
             .padding(5.0)
             .background(backgroundColor)
