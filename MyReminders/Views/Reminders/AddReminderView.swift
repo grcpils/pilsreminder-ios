@@ -13,30 +13,70 @@ struct AddReminderView: View {
     }
 
     @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss
     
     @State private var title: String = ""
+    @State private var description: String = ""
     @State private var isImportant: Bool = false
+    @State private var isDated: Bool = false
+    @State private var date = Date()
+    @State private var isTimed: Bool = false
     @FocusState private var focusState: FocusableField?
+    
+    @State private var confirmCancelAlert = false
     
     var body: some View {
         NavigationView {
             Form {
-                TextField("Title", text: $title)
-                    .focused($focusState, equals: .title)
+                Section {
+                    TextField("Title", text: $title)
+                        .focused($focusState, equals: .title)
+                        .padding([.top, .bottom], 10)
+                    TextField("Notes", text: $description)
+                        .padding([.top, .bottom], 10)
+                }
                     
-                Toggle(isOn: $isImportant) {
-                    PillsIcon(systemName: "exclamationmark.triangle", foregroundColor: Color.white, backgroundColor: Color.orange.opacity(0.8))
-                    Spacer()
-                    Text("Important")
+                Section {
+                    Toggle(isOn: $isImportant) {
+                        PillsIcon(systemName: "exclamationmark.triangle", foregroundColor: Color.white, backgroundColor: Color.orange.opacity(0.8))
+                        Spacer()
+                        Text("Important")
+                    }
+                    .padding([.top, .bottom], 6)
                 }
                 Section {
-                    Button("Create") {
-                        if ($title.wrappedValue.isEmpty) {
-                            focusState = .title
-                        } else {
-                            addItem()
-                            presentationMode.wrappedValue.dismiss()
+                    Toggle(isOn: $isDated) {
+                        PillsIcon(systemName: "calendar", foregroundColor: Color.white, backgroundColor: Color.red.opacity(0.8))
+                        Spacer()
+                        Text("Date")
+                    }
+                    .padding([.top, .bottom], 6)
+                    
+                    if (isDated == true) {
+                        withAnimation {
+                            DatePicker(
+                                "Start Date",
+                                selection: $date,
+                                displayedComponents: [.date]
+                            )
+                            .datePickerStyle(.graphical)
+                        }
+                    }
+                    
+                    Toggle(isOn: $isTimed) {
+                        PillsIcon(systemName: "clock.fill", foregroundColor: Color.white, backgroundColor: Color.blue.opacity(0.8))
+                        Spacer()
+                        Text("Time")
+                    }
+                    .padding([.top, .bottom], 6)
+                    
+                    if (isTimed == true) {
+                        withAnimation {
+                            DatePicker(
+                                "Start Time",
+                                selection: $date,
+                                displayedComponents: [.hourAndMinute]
+                            )
                         }
                     }
                 }
@@ -46,14 +86,41 @@ struct AddReminderView: View {
                     focusState = .title
                 } else {
                     addItem()
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 }
             }
-            .navigationBarTitle(Text("New reminder"), displayMode: .inline)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     focusState = .title
                 }
+            }
+            .navigationBarTitle(Text("New reminder"), displayMode: .inline)
+            .interactiveDismissDisabled(true)
+            .toolbar() {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        confirmCancelAlert = true
+                    }
+                }
+                ToolbarItem {
+                    Button("Create") {
+                        if ($title.wrappedValue.isEmpty) {
+                            focusState = .title
+                        } else {
+                            addItem()
+                            dismiss()
+                        }
+                    }
+                }
+            }
+        }
+        .confirmationDialog(
+            "Are you sure?",
+            isPresented: $confirmCancelAlert,
+            titleVisibility: .hidden
+        ) {
+            Button("Discard Changes", role: .destructive) {
+                dismiss()
             }
         }
     }
